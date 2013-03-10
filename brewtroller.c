@@ -1,6 +1,21 @@
 /*-------|---------|---------|---------|---------|---------|---------|---------|
 brewtroller.c	
 
+a simple temperature/boil controller for brewing or sous vide
+
+It has 2 knobs, one temperature setpoint and one duty cycle %
+With no temp probe connected, it acts as an open-loop 0-100% boil controller
+With temp probe connected it acts as a simple heat-only thermostat.
+% duty cycle adjustment is still applied even in temp control mode. 
+
+HARDWARE:
+for ATMEGAxx8 set at 1MHz. 
+LM335 on PC0 (10mV/K absolute)
+3-4V pot on PC1 (temperature setpoint)
+0-5V pot on PC2 (duty cycle control)
+AREF=5V
+SSR and LED connected to PBwhatever
+
 This is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 3 or any later
 version. This program is distributed in the hope that it will be useful,
@@ -13,64 +28,52 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 void delay(uint16_t);
 void die (uint8_t);
 void blink (uint8_t);
+void adc_init(void);
+void adc_read(uint8_t);
+
+uint8_t PWM_duty=0;
+uint8_t hyst = 2;      //hysteresis value in ADC counts
+uint16_t probe_ad;  
 
 int main(){
     DDRB = 0xFF;
     DDRC = 0;
-    PORTC = 0xFF;
+    PORTC = 0;
     PORTB = 0;
     //8 bit Timer 0 is used by delay().
     TCCR0A = 0;                //stardard timer mode (page 103)
     TCCR0B = 2;                //fcpu / 1
-    TCCR1A = 0;                //16 bit Timer 1: main program timer 
     for (int i=0; i<8; i++){   //startup blinkenled for user
 	PORTB |= (1<<5);
-	delay(800);            //200ms
+	delay(80);            
 	PORTB &= ~(1<<5);
-	delay(800);
+	delay(80);
     }
-    delay(8000);
-    //read in DIPswitch; set up TIMER1 per Allegro datasheet page 6
-    /*switch (PINC & 0b00000111){  
-	case 0:
-	    die (9);
-	    break;
-	case 1:
-	    die (1);
-	    break;
-	case 2:
-	    die (2);
-	    break;
-	case 3:
-	    die (3);
-	    break;
-	case 4:
-	    die (4);
-	    break;
-	case 5:
-	    die (5);
-	    break;
-	case 6:
-	    die (6);
-	    break;
-	case 7:
-	    break;
-	    die (1);
-	default:
-	    die (1);
-    } */
+    delay(800);
     /****************************************
-    *****this is where the magic happens*****
+    *****main loop***************************
     ****************************************/
     blink(3); //countdown for user convenience
-    uint8_t duty=0;
     while(1){  
-	duty++;
-	PORTB |= (1<<5);
-	delay(duty);            //200ms
-	PORTB &= ~(1<<5);
-	delay(255-duty);
-    }
+	/*
+	adc_read(0);probe_ad = ADCW;      //read temp probe
+	if(probe_ad < 900){               //read setpoint knob if probe exists
+	    adc_read(1);                
+	    if(ADCW > (probe_ad + hyst)){         //thermostat
+		write_pwm(1);
+	    }else if(ADCW < (probe_ad -hyst){
+		write_pwm(0);
+	    }
+	}else{                  //just apply duty cycle setting if no probe
+	    write_pwm(1);
+	}
+	*/
+	PWM_duty++;
+	PORTB = 0xFF;
+	delay(PWM_duty);            //200ms
+	PORTB = 0;
+	delay(255-PWM_duty);
+    } //infty
 }//main
 
 void delay(uint16_t me){    //at 1MHz, each unit is 2.55us. 1ms is 4units. 
@@ -80,23 +83,41 @@ void delay(uint16_t me){    //at 1MHz, each unit is 2.55us. 1ms is 4units.
 	while(TCNT0 > 128){}
     }
 }
-
 void die (uint8_t me){
     while(1){
 	blink(me);
-	delay(20000);
+	delay(2000);
     }
 }
-
 void blink (uint8_t me){
     for (int i=0; i<me; i++){
 	PORTB |= (1<<5);
-	delay(3000);
+	delay(300);
 	PORTB &= ~(1<<5);
-	delay(3000);
+	delay(300);
     }
     delay(600);
 }
+void adc_init(void){
+    ADCSRA = (1<<ADEN)|(1<<ADPS2); //62kHz @ 1MHz clock
+    ADMUX |= (1<<REFS0);           //Avcc (5v)
+    ADCSRA |= (1<<ADEN); 
+    ADCSRA |= (1<<ADSC);  
+}
+void adc_read(uint8_t me){
+    ADMUX &= 0xF0;
+    ADMUX |= me;
+    ADCSRA |= (1<<ADSC); while(ADCSRA & (1<<ADSC)){}; 
+}
+void write_pwm(uint8_t me){
+    if(me){
+	adc_read(2);
+	PWM_duty=ADCW>>2;
+    }else{
+	PWM_duty=0;
+    }
+}
+
 /*Set a bit
  bit_fld |= (1 << n)
 

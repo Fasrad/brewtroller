@@ -30,6 +30,7 @@ void die (uint8_t);
 void blink (uint8_t);
 void adc_init(void);
 void adc_read(uint8_t);
+void write_pwm(uint8_t);
 
 uint8_t PWM_duty=0;
 uint8_t hyst = 2;      //hysteresis value in ADC counts
@@ -55,19 +56,17 @@ int main(){
     ****************************************/
     blink(3); //countdown for user convenience
     while(1){  
-	/*
 	adc_read(0);probe_ad = ADCW;      //read temp probe
 	if(probe_ad < 900){               //read setpoint knob if probe exists
 	    adc_read(1);                
 	    if(ADCW > (probe_ad + hyst)){         //thermostat
 		write_pwm(1);
-	    }else if(ADCW < (probe_ad -hyst){
+	    }else if(ADCW < (probe_ad-hyst)){
 		write_pwm(0);
 	    }
 	}else{                  //just apply duty cycle setting if no probe
 	    write_pwm(1);
 	}
-	*/
 	PWM_duty++;
 	PORTB = 0xFF;
 	delay(PWM_duty);            //200ms

@@ -3,8 +3,8 @@ MEGA=328
 CFLAGS=-Os -std=c99 -mmcu=atmega$(MEGA)
 OBJ2HEX=/usr/bin/avr-objcopy 
 PROG=/usr/bin/avrdude
-#TARGET=brewtroller
-TARGET=testtroller
+TARGET=brewtroller
+#TARGET=testtroller
 
 program : $(TARGET).hex
 	$(PROG) -c avrispv2 -p m$(MEGA) -P /dev/ttyACM0 -e

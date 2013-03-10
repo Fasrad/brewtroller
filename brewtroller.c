@@ -33,7 +33,7 @@ void adc_read(uint8_t);
 void write_pwm(uint8_t);
 
 uint8_t PWM_duty=0;
-uint8_t hyst = 2;      //hysteresis value in ADC counts
+uint8_t hyst = 0;      //hysteresis value in ADC counts
 uint16_t probe_ad;  
 
 int main(){
@@ -50,6 +50,7 @@ int main(){
 	PORTB &= ~(1<<5);
 	delay(80);
     }
+    adc_init();
     delay(800);
     /****************************************
     *****main loop***************************
@@ -67,7 +68,6 @@ int main(){
 	}else{                  //just apply duty cycle setting if no probe
 	    write_pwm(1);
 	}
-	PWM_duty++;
 	PORTB = 0xFF;
 	delay(PWM_duty);            //200ms
 	PORTB = 0;

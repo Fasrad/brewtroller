@@ -8,7 +8,6 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
 ******************************************************************/
 
-#define mdelay 5         //sets manual positioning speed; see delay()
 #include <avr/io.h>
 
 void delay(uint16_t);
@@ -18,11 +17,11 @@ void blink (uint8_t);
 int main(){
     DDRB = 0xFF;
     DDRC = 0;
-    PORTB = 0b00011100;
     PORTC = 0xFF;
-    //8 bit Timer 0 is the pwm timer. Also used by delay().
-    TCCR0A = 0;                //fast pwm mode (page 103)
-    TCCR0B = 1;                //fcpu / 1
+    PORTB = 0;
+    //8 bit Timer 0 is used by delay().
+    TCCR0A = 0;                //stardard timer mode (page 103)
+    TCCR0B = 2;                //fcpu / 1
     TCCR1A = 0;                //16 bit Timer 1: main program timer 
     for (int i=0; i<8; i++){   //startup blinkenled for user
 	PORTB |= (1<<5);
@@ -32,7 +31,7 @@ int main(){
     }
     delay(8000);
     //read in DIPswitch; set up TIMER1 per Allegro datasheet page 6
-    switch (PINC & 0b00000111){  
+    /*switch (PINC & 0b00000111){  
 	case 0:
 	    die (9);
 	    break;
@@ -59,15 +58,18 @@ int main(){
 	    die (1);
 	default:
 	    die (1);
-    } 
+    } */
     /****************************************
     *****this is where the magic happens*****
     ****************************************/
-    blink(10); //countdown for user convenience
-    PORTB &= ~(1<<5);           //clear any blinkenled (kludge)
+    blink(3); //countdown for user convenience
+    uint8_t duty=0;
     while(1){  
-	TCNT1 = 0;          
-	PORTB |= (1<<1);       //toggle  pin 
+	duty++;
+	PORTB |= (1<<5);
+	delay(duty);            //200ms
+	PORTB &= ~(1<<5);
+	delay(255-duty);
     }
 }//main
 

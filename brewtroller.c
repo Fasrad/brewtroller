@@ -64,10 +64,12 @@ int main(){
 	}else{                //just apply duty cycle setting if no probe
 	    write_pwm(1);
 	}
-	PORTB = 0xFF;
-	delay(PWM_duty); 
-	PORTB = 0;
-	delay(255-PWM_duty);
+	if(PWM_duty){
+	    PORTB = 0xFF;
+	    delay(PWM_duty); 
+	    PORTB = 0;
+	    delay(255-PWM_duty);
+	}
     } //infty
 }//main
 void delay(uint16_t me){    //at 1MHz, each unit is 2.55us. 1ms is 4units. 

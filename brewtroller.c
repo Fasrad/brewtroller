@@ -47,8 +47,8 @@ int main(){
     TCCR0B = 2;                //fcpu / 1
     //16-bit Timer 1 used as output PWM on OC1B PB2 (Arduino pin 10) p.115
     //noninverting phase correct, OCR1A=TOP mode channel B p135 
-    TCCR1A = (1<<COM1B1)|(1<<WGM11)|(1<<WGM10); TCCR1B = (1<<WGM13);
-    TCCR1B = (1<<CS12);        //  clk/256
+    TCCR1A = (1<<COM1B1)|(1<<WGM11)|(1<<WGM10); 
+    TCCR1B = (1<<WGM13)|(1<<CS12);        //  clk/256
     OCR1A = 0x1000;            //set TOP=12 bits
     OCR1B = 0x800;
     adc_init();

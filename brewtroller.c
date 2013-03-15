@@ -40,20 +40,17 @@ uint16_t probe_ad;
 uint16_t set_ad;  
 
 int main(){
-    OCR2A=128;
-    OCR2B=128;
     DDRB = 0xFF;
     DDRD = 0xFF;
-    DDRC = 0;
-    PORTC = 0;
-    PORTB = 0;
     //8 bit Timer 0 is used by delay().
     TCCR0A = 0;                //stardard timer mode (page 103)
     TCCR0B = 2;                //fcpu / 1
-    //8 bit Timer 2 used as output PWM on OC2A PB3 (Arduino pin 11) p.159
-    TCCR2B = (1<<CS22)|(1<<CS21)|(1<<CS20); //CPU/1024; 2Hz
-    TCCR2A = (1<<WGM20);// TCCR2B = (1<<WGM22); //phase correct TOP=OCR2A mode 
-    TCCR2A = (1<<COM2A1);//|(1<<COM2B1); //turn on pin, noninverting, when slow pwm
+    //16-bit Timer 1 used as output PWM on OC1B PB2 (Arduino pin 10) p.115
+    //noninverting phase correct, OCR1A=TOP mode channel B p135 
+    TCCR1A = (1<<COM1B1)|(1<<WGM11)|(1<<WGM10); TCCR1B = (1<<WGM13);
+    TCCR1B = (1<<CS12);        //  clk/256
+    OCR1A = 0x1000;            //set TOP=12 bits
+    OCR1B = 0x800;
     adc_init();
     /****************************************
     *****main loop***************************
@@ -61,7 +58,7 @@ int main(){
     blink(3); 
     for(;;){  
 	probe_ad = adc_read(0); 
-	blink(probe_ad>>9);
+	blink(probe_ad>>10);
 	if(probe_ad < 3500){            //read setpoint knob iff probe exists
 	    set_ad = adc_read(1);                
 	    if(set_ad > (probe_ad + hyst)){   //thermostat block
@@ -73,9 +70,9 @@ int main(){
 	    write_pwm(1);
 	}
 	blink(1);
-	PORTD=8;
+	PORTB=4;
 	delay(1000);
-	PORTD=0;
+	PORTB=0;
 	delay(1000);
    } //infty
 }//main

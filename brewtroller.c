@@ -69,7 +69,7 @@ int main(){
 		OCR1B = 0;
 	    }
 	}else{                //just apply duty cycle setting if no probe
-	    OCR1B = adc_read(2);
+	    OCR1B = adc_read(2) & 0xFF00;
 	}
    } //infty
 }//main

@@ -123,20 +123,27 @@ Contactor&PB5&for NO Contactor&5V=Contactor on\\
 \section{Operating Details}
 
 As you can see, the system is configurable. With nothing hooked up, the firmware does nothing. You can add
-functionality by simply hooking up more hardware. An output for a contactor
+functionality by simply hooking up more hardware. For example, an output for a contactor
 is provided, but if you leave it disconnected, no problem. An input for a
 temp probe is provided, but if you leave it disconnected, the firmware just
-ignores thermostat functionality. The simplest possible
+ignores thermostat functionality. 
+
+The simplest possible
 hardware is a 2-position (or 3-position ``center-off'') switch connected to
 the ``boil'' and ``off'' inputs. With a pull-up resistor on the ``BOIL''
 pot input, this allows 3-way switching between ON, OFF, and BOIL. If you
 want to control the boil with a knob, hook a pot up to the BOIL input. If
-you want at thermostat, hook up a temp probe and another pot. A
-full-featured system has a 3-way, ``center-off'' switch to select ``OFF'',
+you want at thermostat, hook up a temp probe and another pot. 
+
+A
+full-featured system has a contactor, temp probe connection, 2 knobs, a 3-way, ``center-off'' switch to select ``OFF'',
 ``ON'', and ``BOIL''. When OFF, the contactor and SSR output are both off.
-When set to BOIL, the contactor is on and the element is fired at the fixed
-BOIL duty cycle. When on ON, the BOIL potentiometer is used to set the boil
-duty cycle. If a temp probe is connected, the element is switched on and off according to the temperature and the setting on the TEMP PROBE knob. Note that the BOIL knob setting is still applied even in thermostat mode, so you can either turn it up all the way or leave it to some partial setting to tune system response or avoid overshoot.  
+When ON, the contactor is on and the element is controlled thermostatically
+whenever the temp probe is plugged in. 
+The BOIL potentiometer is used to set the element 
+duty cycle, whether or not a temp probe is connected. Placing the switch on
+``BOIL'' fires the element at the pre-selected duty cycle for consistent
+boiling.
 
 \centering
 \vspace{2cm}

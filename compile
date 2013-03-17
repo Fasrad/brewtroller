@@ -1,0 +1,7 @@
+#!/bin/bash
+
+latex $@.tex
+
+latex $@.tex
+dvipdf $@.dvi
+xpdf $@.pdf

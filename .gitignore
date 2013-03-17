@@ -1,0 +1,9 @@
+#files to not version
+
+*.swp
+*.out
+*.aux
+*.toc
+*.dvi
+*.log
+*.lof

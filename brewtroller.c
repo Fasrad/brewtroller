@@ -68,9 +68,9 @@ int main(){
     ****************************************/
     blink(3);
     for(;;){  
-	if(PORTB&1<<4){                      //if switch is not 'off'
-	    PORTB|=1<<5;                     //turn on contactor
-	    if(PORTB&1<<3){                  //if switch is not 'boil'
+	if(PINB&1<<3){                      //if switch is not 'WFO'
+	    PINB|=1<<5;                     //turn on contactor
+	    if(PINB&1<<4){                  //if switch is not 'boil'
 		probe_ad = adc_read(0); 
 		if(probe_ad < 0x0EFF){       //continue iff probe detected 
 		    set_ad = adc_read(1);                
@@ -86,8 +86,7 @@ int main(){
 		OCR1B = boil_setpoint;
 	    }
 	}else{
-	    PORTB&=~(1<<5);       //kill everything if switch is off
-	    OCR1B = 0x0000;
+	    OCR1B = OCR1A;                 //WFO switch is on
 	}
    } //infty
 }//main

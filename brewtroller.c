@@ -14,7 +14,10 @@ The duty cycle knob setting is still applied even in temp control mode.
 HARDWARE:
 for ATMEGAxx8 set at 1MHz running at 5V. 
 SSR connected to PB2 (OC1B) for heating element
-SPDT or 2 SPST switch connected from PB4 and PB5 to ground (optional, simplest)
+2 SPST switch connected from PB4 and PB5 to ground (optional, simplest)
+PB3 = boil
+PB4 = OFF
+PB5 = contactor
 Pot on PC2 (duty cycle control knob, optional)
 LED connected to PB5 (recommended)
 NO contactor connected to PB6 (optional)

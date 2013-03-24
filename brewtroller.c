@@ -45,10 +45,11 @@ void blink (uint8_t);
 void adc_init(void);
 uint16_t adc_read(uint8_t);
 
-uint16_t probe_ad;  
-uint16_t set_ad;  
-
 int main(){
+    uint16_t probe_ad;  
+    uint16_t set_ad;  
+    uint16_t dly;    //compressor delay
+    uint16_t dlycnt;
     //8 bit Timer 0 is used by delay().
     TCCR0A = 0;                //standard timer mode (page 103)
     TCCR0B = 2;                //fcpu / 1
@@ -58,23 +59,26 @@ int main(){
     TCCR1B = (1<<WGM13)|(1<<CS12);                 //  clk/256
     //TCCR1B = (1<<WGM13)|(1<<CS11)|(1<<CS10);       //  clk/64
     //TCCR1B = (1<<WGM13)|(1<<CS10);                 //  clk/1
+    //8 bit Timer 2 used for compressor delay
+    TCCR2A = ();
+    TCCR2B = ();
     OCR1A = 0x0FF0;             //sets pwm TOP 
     OCR1B = 0;
     PORTB = 0xFF;
     DDRB = 0b000100100;        //LED on PB5; OC1B is PB2
     adc_init();
+    if (PINB&1<<0){dly=255;}   //enable compressor delay
     /****************************************
     *****main loop***************************
     ****************************************/
-    blink(3);
     for(;;){  
 	if(PINB&1<<3){                      //if switch is not 'WFO'
-	    PINB|=1<<5;                     //turn on contactor
+	    PINB|=1<<5;                     //turn on LED
 	    if(PINB&1<<4){                  //if switch is not 'boil'
 		probe_ad = adc_read(0); 
 		if(probe_ad < 0x0EFF){       //continue iff probe detected 
-		    set_ad = adc_read(1);                
-		    if(set_ad > (probe_ad + hyst)){   //thermostat block
+		    set_ad = adc_read(1);    //thermostat block
+		    if((set_ad>(probe_ad+hyst))&&(dlycnt>dly)){  
 			OCR1B = adc_read(2) & 0xFF00;
 		    }else if(set_ad < (probe_ad - hyst)){
 			OCR1B = 0x0000;

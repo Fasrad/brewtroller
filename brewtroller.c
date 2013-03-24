@@ -1,31 +1,10 @@
 /*-------|---------|---------|---------|---------|---------|---------|---------|
 brewtroller.c	
 
-a simple temperature/boil controller for brewing or sous vide
+a simple PWM generator/thermostat/boil controller for brewing or sous vide
+refer to brewtroller.pdf for details
 
-by chaz miller 
-
-With no temp probe, it acts as an open-loop 0-100% boil controller.
-If installed, boil override switch allows fixed boil power to be set. 
-Temp probe presence is auto-detected.
-With temp probe connected it acts as a simple heat-only thermostat.
-The duty cycle knob setting is still applied even in temp control mode. 
-
-HARDWARE:
-for ATMEGAxx8 set at 1MHz running at 5V. 
-SSR connected to PB2 (OC1B) for heating element
-2 SPST switch connected from PB4 and PB5 to ground (optional, simplest)
-PB3 = boil
-PB4 = OFF
-PB5 = contactor
-Pot on PC2 (duty cycle control knob, optional)
-LED connected to PB5 (recommended)
-NO contactor connected to PB6 (optional)
-LM335 diode temp sensor + 10kish resistor on PC0 (10mV/K absolute) (optional)
-Pot on PC3 (temp setpoint knob) (needed if temp sensor is used)
-
-For a bit more real precision divide down Vcc and run the pots and AREF at 4V.
-Bracket temp setpoint knob with resistors to taste.
+by chaz miller for ATMEGAxx8 set at 1MHz running at 5V. 
 
 This is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 3 or any later
@@ -48,38 +27,47 @@ uint16_t adc_read(uint8_t);
 int main(){
     uint16_t probe_ad;  
     uint16_t set_ad;  
-    uint16_t dly;    //compressor delay
-    uint16_t dlycnt;
-    //8 bit Timer 0 is used by delay().
-    TCCR0A = 0;                //standard timer mode (page 103)
-    TCCR0B = 2;                //fcpu / 1
+    uint16_t dly;         //compressor delay
+    uint16_t dlycnt;      //comp. delay counter
     //16-bit Timer 1 used as output PWM on OC1B PB2 (Arduino pin 10) p.115
     //noninverting phase correct, CTC-PWM hybrid mode p135 
     TCCR1A = (1<<COM1B1)|(1<<WGM11)|(1<<WGM10); 
-    TCCR1B = (1<<WGM13)|(1<<CS12);                 //  clk/256
-    //TCCR1B = (1<<WGM13)|(1<<CS11)|(1<<CS10);       //  clk/64
-    //TCCR1B = (1<<WGM13)|(1<<CS10);                 //  clk/1
-    //8 bit Timer 2 used for compressor delay
-    TCCR2A = ();
-    TCCR2B = ();
     OCR1A = 0x0FF0;             //sets pwm TOP 
     OCR1B = 0;
+    switch ((PINB&0xC0)>>6){
+	case 0:                                            //  PB6=PB7=gnd
+	    TCCR1B = (1<<WGM13)|(1<<CS10);                 //  clk/1; 240kHz
+	    CLKPR = 0x80; CLKPR = 0;                       //  clk*8; 2kHz
+	    break;
+	case 1:                                            //  PB6 = gnd
+	    TCCR1B = (1<<WGM13)|(1<<CS10);                 //  clk/1; 240kHz
+	    break;
+	case 2:                                            //  PB7 = gnd
+	    TCCR1B = (1<<WGM13)|(1<<CS11)|(1<<CS10);       //  clk/64; 4Hz
+	    break;
+	case 3:
+	    TCCR1B = (1<<WGM13)|(1<<CS12);                 //  clk/256; 1Hz
+    }
+    //8 bit Timer 2 for compressor delay; 1 may work?
+    TCCR2B = (1<<CS22)|(1<<CS21)|(1<<CS20);                //CPU/1024; 2Hz
     PORTB = 0xFF;
+    PORTB|=1<<5;                     //turn on LED
     DDRB = 0b000100100;        //LED on PB5; OC1B is PB2
     adc_init();
-    if (PINB&1<<0){dly=255;}   //enable compressor delay
+    if (PINB&1<<0){dly=0x200;}   //enable compressor delay; 2 cnts=1sec
     /****************************************
     *****main loop***************************
     ****************************************/
     for(;;){  
+	if(TIFR2&1<<TOV2){dlycnt++;TIFR2|=1;} //increment compressor delay
 	if(PINB&1<<3){                      //if switch is not 'WFO'
-	    PINB|=1<<5;                     //turn on LED
 	    if(PINB&1<<4){                  //if switch is not 'boil'
-		probe_ad = adc_read(0); 
+		probe_ad = adc_read(0);     //read probe
 		if(probe_ad < 0x0EFF){       //continue iff probe detected 
-		    set_ad = adc_read(1);    //thermostat block
+		    set_ad = adc_read(1);    //be thermostat 
 		    if((set_ad>(probe_ad+hyst))&&(dlycnt>dly)){  
 			OCR1B = adc_read(2) & 0xFF00;
+			dlycnt=0;
 		    }else if(set_ad < (probe_ad - hyst)){
 			OCR1B = 0x0000;
 		    }
@@ -97,10 +85,9 @@ int main(){
 void adc_init(void){
     //ADCSRA = (1<<ADEN)|(1<<ADPS1)|(1<<ADPS0); //125kHz @ 1MHz clock, page 264
     ADCSRA = (1<<ADEN)|(1<<ADPS2); //62kHz @ 1MHz clock, page 264
-    ADMUX |= (1<<REFS0);           //Avcc (5v)
+    ADMUX |= (1<<REFS0);           //AREF=Avcc (5v)
     //ADMUX |= (1<<ADLAR);           //left align for 8-bit operation
     ADCSRA |= (1<<ADEN); 
-    //ADCSRA |= (1<<ADSC);  
 }
 uint16_t adc_read(uint8_t me){    //expects register value, not port pin label
     uint16_t ad_bucket=0;
@@ -113,6 +100,10 @@ uint16_t adc_read(uint8_t me){    //expects register value, not port pin label
     }
     return (ad_bucket>>2); //12 bits oversampled
 }
+/*
+    //8 bit Timer 0 is used by delay().
+    TCCR0A = 0;                //standard timer mode (page 103)
+    TCCR0B = 2;                //fcpu / 1
 void delay(uint16_t me){    //at 1MHz, each unit is 2.55us. 1ms is 4units. 
     while(me){
 	while(TCNT0 < 128){}
@@ -129,7 +120,7 @@ void blink (uint8_t me){
     }
     delay(500);
 }
-/*Set a bit
+Set a bit
  bit_fld |= (1 << n)
 
 Clear a bit

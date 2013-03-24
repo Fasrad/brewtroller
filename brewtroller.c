@@ -91,7 +91,8 @@ int main(){
    } //infty
 }//main
 void adc_init(void){
-    ADCSRA = (1<<ADEN)|(1<<ADPS1)|(1<<ADPS0); //125kHz @ 1MHz clock, page 264
+    //ADCSRA = (1<<ADEN)|(1<<ADPS1)|(1<<ADPS0); //125kHz @ 1MHz clock, page 264
+    ADCSRA = (1<<ADEN)|(1<<ADPS2); //62kHz @ 1MHz clock, page 264
     ADMUX |= (1<<REFS0);           //Avcc (5v)
     //ADMUX |= (1<<ADLAR);           //left align for 8-bit operation
     ADCSRA |= (1<<ADEN); 

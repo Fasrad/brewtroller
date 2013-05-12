@@ -14,6 +14,8 @@
 \newcommand{\faster}{PB7}
 \newcommand{\fastest}{PB1}
 \newcommand{\delay}{PB0}
+\newcommand{\pwma}{PB6}
+\newcommand{\pwmb}{PB7}
 
 \documentclass[dvips,12pt]{article}
 \renewcommand{\contentsname}{3. Index} 
@@ -67,8 +69,9 @@ microcontroller firmware that can fulfil these roles and possibly replace expens
 The microcontroller used is an ATMEGA328 8-bit AVR\textcopyright\ microcontroller which is widely available for about 3
 USFRN in convenient packages. It was selected for its availability in my toolbox. The firmware would run on other AVR
 microcontrollers with minimal modification. The microcontroller is powered by 5V and runs at 1MHz, which is how it's
-configured out-of-the-box.  No external crystal is needed, just apply 5V on the Vcc pin and pull up RESET. Refer to
-figure \ref{fig:uc} for microcontroller connections. Note that if you use a 5V cell-phone power supply, you don't need
+configured out-of-the-box.  No external crystal is needed, just apply 5V on the Vcc pin and
+pull up RESET (refer to
+figure \ref{fig:uc}). Note that if you use a 5V cell-phone power supply, you don't need
 any voltage regulator.
 
 Flashing this firmware to the microcontroller will require an in-system-programmer such as the AVRISPV2 or USBTinyISP.
@@ -80,15 +83,17 @@ send you a programmed chip for a nominal fee.
 
 \section{Configuration Possibilities}
 
-The firmware is very flexible. It can be a PWM source, thermostat, or full-featured brew controller. You can make an increasingly featureful system by hooking up more hardware. 
+The firmware is very flexible. It can be a PWM generator, thermostat, or full-featured brew controller. You can make an increasingly featureful system by hooking up more hardware. 
 
 \subsection{PWM}
 Simply hook up two resistors to the BOIL analog input (\duty) as a voltage divider (figure \ref{fig:vdiv}). The system
 will then toggle the relay output \relay{} at a duty cycle proportional to the voltage applied. Refer to table
-\ref{fig:resistors} and figure \ref{fig:vdiv} for resistor values. In this mode you essentially have a
-pulse-width-modulation (PWM) generator that is similar to all the 555-timer-based PWM circuits out there. If all you need to do is knock down a heating element's wattage, this might be all you need. 
+\ref{fig:resistors} and figure \ref{fig:vdiv} for resistor values. In this mode you have a
+simple pulse-width-modulation (PWM) generator that is similar to all the 555-timer-based PWM circuits out there. If all you need to do is knock down a heating element's wattage, this might be all you need. 
 
-If you want variable output, just use a potentiometer instead of 2 resistors--then, the firmware is a varible PWM generator. You could use the analog input for feedback, if you so desire.
+If you want variable output, just use a potentiometer instead of 2 resistors--then, the
+firmware is a varible PWM generator. You could use the analog input to set the duty cycle with
+some other system, if you so desire.
 
 \subsection{Boil Override Switches} 
 You can add more options to your PWM controller by hooking two switches (or one 3-position ``center-off'' switch) from
@@ -104,7 +109,7 @@ You can use analog inputs \probe{} and \temp{} to create a thermostat. Input \pr
 a kegerator, just swap the \temp{} and \probe{} inputs. Note that once the thermostat commands the output ON, the duty
 cycle of the output is still whatever is set by \duty. You need to connect \duty{} to +5V, resistors, or a pot depending
 if you want the output \% to be full, partial, or adjustable. For a kegerator, you definitely want to pull \duty{} up to
-5V.
+5V. Refer to figures \ref{fig:max}.
 
 \section{How I use it}
 
@@ -145,6 +150,12 @@ BOIL pot&\duty&0V-5V analog in&Heating element power\\
 \hline
 TEMP pot&\temp&0V-5V analog in&Temp setpoint\\
 \hline
+PWM select A&\pwma&GND or N.C.&per figure \ref{fig:freq}\\
+\hline
+PWM select B&\pwmb&GND or N.C.&per figure \ref{fig:freq}\\
+\hline
+Compressor delay&\delay&GND or N.C.&GND=delay enabled\\
+\hline
 \end{tabular}
 \caption{Table Of Inputs}
 \label{fig:inputs}
@@ -171,7 +182,7 @@ SSR&\relay&Hook to SSR&5V=heater on\\
 \centering
 \begin{tabular}{|c|c|c|c|}
 \hline
-R1&R2&Voltage&Duty Cycle\\
+R1&R2&\duty Voltage&Duty Cycle\\
 \hline
 0&$\infty$&5V&100\%\\
 \hline
@@ -188,6 +199,27 @@ $\infty$&0&0V&0\%\\
 \label{fig:resistors}
 \end{figure}
 
+\renewcommand{\arraystretch}{1.4}% adjust hline heights for prettiness
+\begin{figure}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+PB6&PB7&PWM frequency\\
+\hline
+na&na&1Hz\\
+\hline
+GND&na&4Hz\\
+\hline
+na&GND&240Hz\\
+\hline
+GND&GND&2000Hz\\
+\hline
+\end{tabular}
+\caption{Pin settings for changing PWM frequency}
+\label{fig:freq}
+\end{figure}
+
+
 \begin{figure}[h]
     \begin{centering}
     \includegraphics[width=0.8\textwidth]{vdiv}
@@ -199,7 +231,7 @@ $\infty$&0&0V&0\%\\
 \begin{figure}[h]
     \begin{centering}
     \includegraphics[width=0.8\textwidth]{min}
-    \caption{Example Minimal System}
+    \caption{Example minimal system for heating element control}
     \label{fig:min}
     \end{centering}
 \end{figure}
@@ -208,7 +240,7 @@ $\infty$&0&0V&0\%\\
 \begin{figure}[h]
     \begin{centering}
     \includegraphics[width=0.8\textwidth]{max}
-    \caption{Example Complete System} 
+    \caption{Example complete system with thermostat} 
     \label{fig:max}
     \end{centering}
 \end{figure}
@@ -216,14 +248,14 @@ $\infty$&0&0V&0\%\\
 \begin{figure}[h]
     \begin{centering}
     \includegraphics[width=0.8\textwidth]{uc}
-    \caption{Microcontroller connections} 
+    \caption{Microcontroller connections. If clean 5V power (e.g. USB) the LM7805 is unneeded.} 
     \label{fig:uc}
     \end{centering}
 \end{figure}
 \begin{figure}[h]
     \begin{centering}
     \includegraphics[width=0.8\textwidth]{pins}
-    \caption{Pinout for ATMEGA168/328} 
+    \caption{Pinout for ATMEGA168/328 DIP package} 
     \label{fig:pins}
     \end{centering}
 \end{figure}
